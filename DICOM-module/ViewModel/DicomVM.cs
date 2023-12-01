@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Compression;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
@@ -26,6 +27,17 @@ namespace DICOM_module.ViewModel
         
         private ObservableCollection<DicomM> dicomFiles { get; set; }
         ObservableCollection<DicomM> DICOMsortedByPatientID {  get; set; }
+        private ObservableCollection<ZipFolderVM> _zipFolders;
+
+        public ObservableCollection<ZipFolderVM> zipFolders
+        {
+            get { return _zipFolders; }
+            set 
+            { 
+                _zipFolders = value;
+                OnPropertyChanged(nameof(zipFolders));
+            }
+        }
 
         private ICommand _openDicomFolder;
         public ICommand OpenDicomFolder
@@ -39,7 +51,7 @@ namespace DICOM_module.ViewModel
         {
             dicomFiles = new ObservableCollection<DicomM>();
             DICOMsortedByPatientID = new ObservableCollection<DicomM>();
-
+            LoadZipFolders();
         }
 
         private void OpenFolder()
@@ -80,7 +92,18 @@ namespace DICOM_module.ViewModel
             }
             Sort(dicomFiles);
             CategoriesAndZipp();
+            LoadZipFolders();
         }
+
+        private void LoadZipFolders()
+        {
+            string pathzipFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) , "DICOM_Zip_Files");
+            string[] zipfiles = Directory.GetFiles(pathzipFolder, "*.zip");
+            zipFolders = new ObservableCollection<ZipFolderVM>(zipfiles.Select(
+                file => new ZipFolderVM { filename = Path.GetFileNameWithoutExtension(file), filePath = file }
+                ));
+        }
+
         private void Sort(ObservableCollection<DicomM> dicomsList) 
         {
             SortByPatientID();
@@ -130,20 +153,22 @@ namespace DICOM_module.ViewModel
                 var patientIdElement = dicomObject.DICOMObject.FindFirst(TagHelper.PatientID);
                 return patientIdElement?.DData.ToString() ?? string.Empty;
             }).ToList();
-
+            
             string zipFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "DICOM_Zip_Files");
-            Directory.CreateDirectory(zipFolderPath);
+            if (!Directory.Exists(zipFolderPath))
+                Directory.CreateDirectory(zipFolderPath);
 
             foreach (var patientGroup in categoriesWithPatientId) 
             {
                 
                 string patientId = patientGroup.Key;
-                List<DicomM> list = patientGroup.ToList();
+                List<DicomM> list = new List<DicomM>();
+                list = patientGroup.ToList(); 
                 var firstDicom = list.Find(dcm => dcm.DICOMObject.FindFirst(TagHelper.PatientID).DData == patientId).DICOMObject ;
                 var strongName = firstDicom.FindFirst(TagHelper.PatientName) as PersonName; 
                 var firstName = strongName.FirstName;
                 var lastName = strongName.LastName;
-                string zipFileName = $"{patientId}_DICOM_Files.zip";
+                string zipFileName = $"{patientId}_{firstName}_{lastName}.zip";
                 string zipFilePath = Path.Combine(zipFolderPath, zipFileName);
                 using (ZipArchive zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create))
                 {
@@ -158,6 +183,45 @@ namespace DICOM_module.ViewModel
                     }
                 }
             }
+        }
+
+
+    }
+
+    public class ZipFolderVM : ViewModelBase
+    {
+        public string filename { get; set; }
+        public string filePath { get; set; }
+        private string _txtEmailAddress;
+
+        public string txtEmailAddress
+        {
+            get { return _txtEmailAddress; }
+            set 
+            { 
+                _txtEmailAddress = value;
+                OnPropertyChanged(nameof(txtEmailAddress));
+            }
+        }
+        private ICommand _sendEmail;
+
+        public ICommand sendEmail
+        {
+            get { return _sendEmail ?? (_sendEmail = new RelayCommand(SendEmail)); }
+            
+        }
+
+       
+
+        private void SendEmail()
+        {
+            string attachmentPath = filePath;
+            string recipient = txtEmailAddress;
+            string subject = "DICOM Files";
+            string body = "Your Files attached in the email.";
+
+            EmailSender emailsender = new EmailSender();
+            emailsender.senEmailWithAttachment(recipient, subject, body, attachmentPath);
         }
     }
 }

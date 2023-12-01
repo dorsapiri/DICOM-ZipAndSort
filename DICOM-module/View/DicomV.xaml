@@ -9,8 +9,7 @@
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
-            <ColumnDefinition Width="2*"/>
-            <ColumnDefinition/>
+            <ColumnDefinition Width="3*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition/>
@@ -19,8 +18,25 @@
             <RowDefinition/>
         </Grid.RowDefinitions>
 
-        <Button Grid.Column="2" Grid.Row="1" Content="Open DICOM" Command="{Binding OpenDicomFolder}"/>
-        
+        <Button Grid.Column="0" Grid.Row="0" Content="Open DICOM" Command="{Binding OpenDicomFolder}"/>
+        <ListView Grid.Column="1" Grid.RowSpan="4" ItemsSource="{Binding zipFolders}">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Zip Folders" DisplayMemberBinding="{Binding}"/>
+                    <GridViewColumn Header="Email Address">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                                    <TextBox Text="{Binding txtEmailAddress , UpdateSourceTrigger=PropertyChanged}" Width="180"/>
+                                    <Button Content="Send" Command="{Binding sendEmail}" CommandParameter="{Binding}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                   
+                </GridView>
+            </ListView.View>
+        </ListView>
         
     </Grid>
 </Window>
