@@ -22,7 +22,7 @@
         <ListView Grid.Column="1" Grid.RowSpan="4" ItemsSource="{Binding zipFolders}">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="Zip Folders" DisplayMemberBinding="{Binding}"/>
+                    <GridViewColumn Header="Zip Folders" DisplayMemberBinding="{Binding filename}"/>
                     <GridViewColumn Header="Email Address">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
