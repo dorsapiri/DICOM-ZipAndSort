@@ -1,6 +1,8 @@
 ﻿
+using MailKit.Net.Smtp;
+using MimeKit;
 using System.Net;
-using System.Net.Mail;
+//using System.Net.Mail;
 using System.Windows;
 
 namespace DICOM_module.ViewModel.Helper
@@ -15,30 +17,37 @@ namespace DICOM_module.ViewModel.Helper
         {
             try 
             {
-                //Create a new meilMessage
-                MailMessage mailMessage = new MailMessage();
+                MimeMessage mailMessage = new MimeMessage();
+                mailMessage.From.Add(new MailboxAddress("Behyar", "dorsapiri@chmail.ir"));
+                mailMessage.To.Add(new MailboxAddress("Recipient", recipient));
                 mailMessage.Subject = subject;
-                mailMessage.Body = body;
-                mailMessage.From = new MailAddress("dorsapiri@gmail.com");
-                mailMessage.To.Add(recipient);
 
-                Attachment attacheZipfile = new Attachment(attachmentPath);
-                mailMessage.Attachments.Add(attacheZipfile);
+                // Body of the email
+                BodyBuilder bodyBuilder = new BodyBuilder();
+                bodyBuilder.TextBody = "DICOM Files";
+               
+                //Attachment
+                bodyBuilder.Attachments.Add(attachmentPath);
 
-                //Create and config SMTP client
-                SmtpClient smtpClient = new SmtpClient("smtp.gmail.com");
-                smtpClient.Port = 587;
-                smtpClient.Credentials = new NetworkCredential("dorsapiri@gmail.com", "password");
-                smtpClient.EnableSsl = true;
+                mailMessage.Body = bodyBuilder.ToMessageBody();
 
-                smtpClient.Send(mailMessage);
+                // Create and configure the SmtpClient
+                using (SmtpClient smtpClient = new SmtpClient())
+                { 
+                    smtpClient.Connect("smtp.chmail.ir", 465,true);
+                    smtpClient.Authenticate("dorsapiri@chmail.ir", "Behyar1402");
 
+                    // Send the email
+                    smtpClient.Send(mailMessage);
+                    smtpClient.Disconnect(true);
+                }
                 MessageBox.Show("Email sent successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+           
         }
     }
 }
