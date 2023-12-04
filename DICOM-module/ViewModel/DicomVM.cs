@@ -160,7 +160,6 @@ namespace DICOM_module.ViewModel
 
             foreach (var patientGroup in categoriesWithPatientId) 
             {
-                
                 string patientId = patientGroup.Key;
                 List<DicomM> list = new List<DicomM>();
                 list = patientGroup.ToList(); 
@@ -170,18 +169,30 @@ namespace DICOM_module.ViewModel
                 var lastName = strongName.LastName;
                 string zipFileName = $"{patientId}_{firstName}_{lastName}.zip";
                 string zipFilePath = Path.Combine(zipFolderPath, zipFileName);
-                using (ZipArchive zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create))
+
+                if (!File.Exists(zipFilePath))
                 {
-                    foreach (var dicom in patientGroup)
+                    using (ZipArchive zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create))
                     {
-                        byte[] dicomData = dicom.DICOMObject.GetBytes();
-                        var entry = zipArchive.CreateEntryFromFile(dicom.FilePath,$"{dicom.FileName}.dcm");
-                        /*using (var entryStream = entry.Open()) 
+                        foreach (var dicom in patientGroup)
                         {
-                            entryStream.Write(dicomData, 0, dicomData.Length);
-                        }*/
+                            byte[] dicomData = dicom.DICOMObject.GetBytes();
+                            var entry = zipArchive.CreateEntryFromFile(dicom.FilePath, $"{dicom.FileName}.dcm");
+                        }
                     }
                 }
+                else 
+                {
+                    using (ZipArchive zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Update))
+                    {
+                        foreach (var dicom in patientGroup)
+                        {
+                            byte[] dicomData = dicom.DICOMObject.GetBytes();
+                            var entry = zipArchive.CreateEntryFromFile(dicom.FilePath, $"{dicom.FileName}.dcm");
+                        }
+                    }
+                }
+                
             }
         }
 
